@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { CategoryFilter } from "@/components/site/CategoryFilter";
 import { ProductCard } from "@/components/site/ProductCard";
 import { getProductsByKind } from "@/lib/catalog";
+import { mapSanityAlbumToStoreItem, type SanityStoreAlbum } from "@/lib/store-mappers";
+import { isSanityConfigured } from "@/sanity/env";
+import { sanityFetch } from "@/sanity/lib/client";
+import { allAlbumsQuery } from "@/sanity/lib/queries";
 import type { ProductKind } from "@/types/content";
 
 export const metadata: Metadata = {
@@ -28,7 +32,25 @@ export default async function StorePage({ searchParams }: StorePageProps) {
     ? (category as ProductKind | "all")
     : "all";
 
-  const items = getProductsByKind(selected);
+  const localItems = getProductsByKind("all");
+  const sanityAlbums = isSanityConfigured
+    ? await sanityFetch<SanityStoreAlbum[]>({
+        query: allAlbumsQuery,
+        tags: ["album"],
+      })
+    : [];
+
+  const albumItems = sanityAlbums.map(mapSanityAlbumToStoreItem);
+  const mergedBySlug = new Map(localItems.map((item) => [item.slug, item]));
+
+  for (const albumItem of albumItems) {
+    if (!mergedBySlug.has(albumItem.slug)) {
+      mergedBySlug.set(albumItem.slug, albumItem);
+    }
+  }
+
+  const allItems = [...mergedBySlug.values()];
+  const items = selected === "all" ? allItems : allItems.filter((item) => item.kind === selected);
 
   return (
     <main className="mx-auto w-full max-w-6xl space-y-8 px-6 py-14">

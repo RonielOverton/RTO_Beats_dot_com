@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { BioSection } from "@/components/site/BioSection";
 import { CtaSection } from "@/components/site/CtaSection";
-import { FeaturedWorkSection } from "@/components/site/FeaturedWorkSection";
+import { FeaturedAlbumsSection } from "@/components/site/FeaturedAlbumsSection";
 import { HeroSection } from "@/components/site/HeroSection";
 import { YoutubeSection } from "@/components/site/YoutubeSection";
 
@@ -16,7 +16,7 @@ export default function HomePage() {
     <main>
       <HeroSection />
       <BioSection />
-      <FeaturedWorkSection />
+      <FeaturedAlbumsSection />
       <YoutubeSection />
       <CtaSection />
     </main>

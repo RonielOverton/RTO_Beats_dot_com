@@ -6,19 +6,53 @@ import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { StructuredData } from "@/components/site/StructuredData";
 import { siteConfig } from "@/data/site";
 import { formatMoney, getAllProducts, getProductBySlug } from "@/lib/catalog";
+import { mapSanityAlbumToStoreItem, type SanityStoreAlbum } from "@/lib/store-mappers";
 import { buildProductJsonLd } from "@/lib/seo";
+import { isSanityConfigured } from "@/sanity/env";
+import { sanityFetch } from "@/sanity/lib/client";
+import { allAlbumSlugsQuery, albumBySlugQuery } from "@/sanity/lib/queries";
 
 interface ProductDetailPageProps {
   params: Promise<{ slug: string }>;
 }
 
 export async function generateStaticParams() {
-  return getAllProducts().map((item) => ({ slug: item.slug }));
+  const productSlugs = getAllProducts().map((item) => ({ slug: item.slug }));
+
+  if (!isSanityConfigured) {
+    return productSlugs;
+  }
+
+  const albumSlugs = await sanityFetch<{ slug: string }[]>({
+    query: allAlbumSlugsQuery,
+    tags: ["album"],
+  });
+
+  const merged = new Map(productSlugs.map((entry) => [entry.slug, entry]));
+  for (const album of albumSlugs) {
+    if (!merged.has(album.slug)) {
+      merged.set(album.slug, { slug: album.slug });
+    }
+  }
+
+  return [...merged.values()];
 }
 
 export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const item = getProductBySlug(slug);
+  let item = getProductBySlug(slug);
+
+  if (!item && isSanityConfigured) {
+    const album = await sanityFetch<SanityStoreAlbum | null>({
+      query: albumBySlugQuery,
+      params: { slug },
+      tags: ["album"],
+    });
+
+    if (album) {
+      item = mapSanityAlbumToStoreItem(album);
+    }
+  }
 
   if (!item) {
     return {
@@ -37,11 +71,29 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { slug } = await params;
-  const item = getProductBySlug(slug);
+  let item = getProductBySlug(slug);
+
+  if (!item && isSanityConfigured) {
+    const album = await sanityFetch<SanityStoreAlbum | null>({
+      query: albumBySlugQuery,
+      params: { slug },
+      tags: ["album"],
+    });
+
+    if (album) {
+      item = mapSanityAlbumToStoreItem(album);
+    }
+  }
 
   if (!item) {
     notFound();
   }
+
+  const hasExternalCheckout = Boolean(item.checkout.externalCheckoutUrl);
+  const hasProviderCheckout = Boolean(
+    item.checkout.stripePriceId || item.checkout.shopifyVariantId
+  );
+  const canAddToCart = !hasExternalCheckout && item.price > 0 && item.stockStatus !== "out-of-stock";
 
   return (
     <main className="mx-auto w-full max-w-6xl space-y-8 px-6 py-14">
@@ -57,8 +109,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           <p className="text-2xl font-semibold text-amber-200">{formatMoney(item.price, item.currency)}</p>
 
           <div className="flex flex-wrap gap-3">
-            <AddToCartButton item={item} />
-            {(item.checkout.stripePriceId || item.checkout.shopifyVariantId || item.checkout.externalCheckoutUrl) && (
+            {canAddToCart && <AddToCartButton item={item} />}
+
+            {hasProviderCheckout && (
               <Link
                 href="/api/checkout"
                 className="rounded-full border border-white/20 px-6 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-zinc-100"
@@ -67,6 +120,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               </Link>
             )}
           </div>
+
+          {hasExternalCheckout && (
+            <p className="text-sm text-zinc-400">Available on Bandcamp from the store card quick buy action.</p>
+          )}
 
           <div className="flex flex-wrap gap-2 pt-2">
             {item.tags.map((tag) => (

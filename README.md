@@ -1,5 +1,34 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Bandcamp to Sanity Import
+
+You can import one or more existing Bandcamp album pages into the `album` document type.
+
+Set these env vars in your local environment:
+
+```bash
+NEXT_PUBLIC_SANITY_PROJECT_ID=your_project_id
+NEXT_PUBLIC_SANITY_DATASET=production
+NEXT_PUBLIC_SANITY_API_VERSION=2026-03-29
+SANITY_API_WRITE_TOKEN=your_write_token
+```
+
+Run importer:
+
+```bash
+npm run import:bandcamp -- https://yourname.bandcamp.com/album/album-slug
+```
+
+Useful flags:
+
+```bash
+# Preview without writing to Sanity
+npm run import:bandcamp -- --dry-run https://yourname.bandcamp.com/album/album-slug
+
+# Update existing docs that match slug or bandcampUrl
+npm run import:bandcamp -- --update https://yourname.bandcamp.com/album/album-slug
+```
+
 ## Getting Started
 
 First, run the development server:

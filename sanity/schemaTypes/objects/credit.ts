@@ -9,6 +9,7 @@ export const creditType = defineType({
       name: "name",
       title: "Name",
       type: "string",
+      description: "Person or team name",
       validation: (rule) => rule.required(),
     }),
     defineField({
@@ -19,6 +20,9 @@ export const creditType = defineType({
       validation: (rule) => rule.required(),
     }),
   ],
+  initialValue: {
+    role: "Producer",
+  },
   preview: {
     select: {
       title: "name",

@@ -45,7 +45,7 @@ export interface StoreItem {
   currency: CurrencyCode;
   featured: boolean;
   tags: string[];
-  stockStatus: "in-stock" | "limited" | "preorder";
+  stockStatus: "in-stock" | "limited" | "preorder" | "out-of-stock";
   checkout: ProductCheckout;
   relatedAlbumSlug?: string;
   downloadable: boolean;

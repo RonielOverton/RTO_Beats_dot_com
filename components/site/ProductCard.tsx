@@ -8,6 +8,8 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ item }: ProductCardProps) {
+  const hasExternalCheckout = Boolean(item.checkout.externalCheckoutUrl);
+
   return (
     <article className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/60 transition hover:border-amber-200/30">
       <div className="relative h-52 w-full">
@@ -22,12 +24,24 @@ export function ProductCard({ item }: ProductCardProps) {
         <p className="text-sm text-zinc-300">{item.shortDescription}</p>
         <div className="flex items-center justify-between">
           <p className="text-lg font-medium text-amber-200">{formatMoney(item.price, item.currency)}</p>
-          <Link
-            href={`/store/${item.slug}`}
-            className="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-200"
-          >
-            Details
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/store/${item.slug}`}
+              className="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-200"
+            >
+              Details
+            </Link>
+            {hasExternalCheckout && (
+              <a
+                href={item.checkout.externalCheckoutUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="rounded-full bg-amber-300 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-amber-200"
+              >
+                Buy now
+              </a>
+            )}
+          </div>
         </div>
       </div>
     </article>

@@ -1,4 +1,12 @@
-import { albumType } from "./documents";
-import { creditType, streamingLinksType, trackType } from "./objects";
+import { albumType, productType } from "./documents";
+import { checkoutLinksType, creditType, productPriceType, streamingLinksType, trackType } from "./objects";
 
-export const schemaTypes = [albumType, trackType, streamingLinksType, creditType];
+export const schemaTypes = [
+	albumType,
+	productType,
+	trackType,
+	streamingLinksType,
+	creditType,
+	productPriceType,
+	checkoutLinksType,
+];

@@ -1,94 +1,90 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Image from "next/image";
-import { StructuredData } from "@/components/site/StructuredData";
-import { siteConfig } from "@/data/site";
-import { getAlbumBySlug, getAllAlbums } from "@/lib/catalog";
-import { buildAlbumJsonLd } from "@/lib/seo";
+import { AlbumDetailView } from "@/components/site/albums/AlbumDetailView";
+import { AlbumSetupState } from "@/components/site/albums/AlbumStates";
+import { sanityFetch } from "@/sanity/lib/client";
+import { allAlbumSlugsQuery, albumBySlugQuery } from "@/sanity/lib/queries";
+import type { SanityAlbumDetail } from "@/sanity/lib/types";
+import { isSanityConfigured } from "@/sanity/env";
+import { getAlbumSummary } from "@/components/site/albums/album-utils";
 
 interface AlbumDetailPageProps {
   params: Promise<{ slug: string }>;
 }
 
+// ─── Static params ────────────────────────────────────────────────────────────
+
 export async function generateStaticParams() {
-  return getAllAlbums().map((album) => ({ slug: album.slug }));
+  if (!isSanityConfigured) return [];
+  const slugs = await sanityFetch<{ slug: string }[]>({
+    query: allAlbumSlugsQuery,
+    tags: ["album"],
+  });
+  return slugs.map(({ slug }) => ({ slug }));
 }
 
-export async function generateMetadata({ params }: AlbumDetailPageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const album = getAlbumBySlug(slug);
+// ─── Metadata ─────────────────────────────────────────────────────────────────
 
-  if (!album) {
-    return {
-      title: "Project not found | RTO Beats",
-    };
-  }
+export async function generateMetadata({
+  params,
+}: AlbumDetailPageProps): Promise<Metadata> {
+  const { slug } = await params;
+
+  if (!isSanityConfigured) return { title: "Album | RTO Beats" };
+
+  const album = await sanityFetch<SanityAlbumDetail | null>({
+    query: albumBySlugQuery,
+    params: { slug },
+    tags: ["album"],
+  });
+
+  if (!album) return { title: "Project not found | RTO Beats" };
+
+  const description = getAlbumSummary(album);
 
   return {
     title: `${album.title} | RTO Beats`,
-    description: album.shortDescription,
-    alternates: {
-      canonical: `/albums/${album.slug}`,
+    description,
+    alternates: { canonical: `/albums/${album.slug}` },
+    robots: {
+      index: album.status !== "draft",
+      follow: true,
+    },
+    openGraph: {
+      title: album.title,
+      description: description ?? undefined,
+      url: `/albums/${album.slug}`,
+      type: "website",
+      images: album.coverImage?.url
+        ? [{ url: album.coverImage.url, alt: album.coverImage.alt ?? album.title }]
+        : undefined,
+    },
+    twitter: {
+      card: album.coverImage?.url ? "summary_large_image" : "summary",
+      title: album.title,
+      description,
+      images: album.coverImage?.url ? [album.coverImage.url] : undefined,
     },
   };
 }
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) {
   const { slug } = await params;
-  const album = getAlbumBySlug(slug);
 
-  if (!album) {
-    notFound();
+  if (!isSanityConfigured) {
+    return <AlbumSetupState />;
   }
 
-  return (
-    <main className="mx-auto w-full max-w-6xl space-y-10 px-6 py-14">
-      <StructuredData data={buildAlbumJsonLd(album, siteConfig.siteUrl)} />
+  const album = await sanityFetch<SanityAlbumDetail | null>({
+    query: albumBySlugQuery,
+    params: { slug },
+    tags: ["album"],
+  });
 
-      <section className="grid gap-8 md:grid-cols-[360px_1fr]">
-        <div className="relative w-full overflow-hidden rounded-2xl border border-white/10">
-          <Image src={album.coverImage} alt={album.title} width={720} height={720} className="w-full object-cover" />
-        </div>
-        <div className="space-y-5">
-          <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">Album Detail</p>
-          <h1 className="text-4xl font-semibold text-zinc-50 md:text-5xl">{album.title}</h1>
-          <p className="text-zinc-300">{album.description}</p>
-          <div className="flex flex-wrap gap-2">
-            {album.genres.map((genre) => (
-              <span key={genre} className="rounded-full border border-white/20 px-3 py-1 text-xs text-zinc-200">
-                {genre}
-              </span>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-4 pt-2">
-            {Object.entries(album.links).map(([platform, href]) => (
-              <a
-                key={platform}
-                href={href}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-[0.15em] text-zinc-100"
-              >
-                {platform}
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
+  if (!album) notFound();
 
-      <section className="rounded-2xl border border-white/10 bg-zinc-950/70 p-6">
-        <h2 className="text-2xl font-semibold text-zinc-50">Tracklist</h2>
-        <ol className="mt-4 space-y-3">
-          {album.tracklist.map((track, index) => (
-            <li key={track.title} className="flex items-center justify-between border-b border-white/10 pb-2 text-zinc-300">
-              <span>
-                {index + 1}. {track.title}
-              </span>
-              <span>{track.duration}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
-    </main>
-  );
+  return <AlbumDetailView album={album} />;
 }
+
