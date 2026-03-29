@@ -1,0 +1,5 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1200" fill="#171717"/>
+  <path d="M350 320 L850 320 L940 980 L260 980 Z" fill="#262626" stroke="#f5f5f5" stroke-opacity="0.35"/>
+  <text x="110" y="1050" fill="#d4d4d8" font-size="92" font-family="Arial">SIGNATURE HOODIE</text>
+</svg>

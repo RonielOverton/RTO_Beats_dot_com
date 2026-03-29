@@ -1,0 +1,7 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1200" fill="#18181b"/>
+  <rect x="180" y="220" width="840" height="760" rx="24" fill="#27272a" stroke="#f59e0b" stroke-width="8"/>
+  <circle cx="360" cy="520" r="90" fill="#f59e0b"/>
+  <circle cx="840" cy="520" r="90" fill="#be185d"/>
+  <text x="110" y="1020" fill="#e4e4e7" font-size="96" font-family="Arial">PLUGIN</text>
+</svg>
