@@ -1,0 +1,5 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1200" fill="#09090b"/>
+  <path d="M0 870 L1200 540 L1200 1200 L0 1200 Z" fill="#f59e0b" fill-opacity="0.35"/>
+  <text x="100" y="980" fill="#fef9c3" font-size="110" font-family="Arial">BEAT LICENSE</text>
+</svg>

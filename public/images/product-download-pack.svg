@@ -1,0 +1,5 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1200" fill="#0f172a"/>
+  <rect x="240" y="220" width="720" height="760" rx="22" fill="#1e293b" stroke="#f59e0b" stroke-width="7"/>
+  <text x="120" y="1020" fill="#f8fafc" font-size="88" font-family="Arial">DRUM VAULT VOL. 1</text>
+</svg>
