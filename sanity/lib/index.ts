@@ -4,11 +4,13 @@ export {
 	allAlbumsQuery,
 	albumBySlugQuery,
 	featuredAlbumsQuery,
+	playableMediaAlbumsQuery,
 	allProductSlugsQuery,
 	allProductsQuery,
 	productsByKindQuery,
 	featuredProductsQuery,
 	productBySlugQuery,
+	playableMediaProductsQuery,
 } from "./queries";
 export type {
 	AlbumStatus,
@@ -18,4 +20,7 @@ export type {
 	SanityProductStatus,
 	SanityProductListItem,
 	SanityProductDetail,
+	SanityPlayableMediaItem,
+	SanityPlayableMediaFile,
+	SanityPlayableStreamingLinks,
 } from "./types";

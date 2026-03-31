@@ -3,6 +3,7 @@ export {
   allAlbumsQuery,
   albumBySlugQuery,
   featuredAlbumsQuery,
+  playableMediaAlbumsQuery,
 } from "./albums";
 
 export {
@@ -11,4 +12,5 @@ export {
   productsByKindQuery,
   featuredProductsQuery,
   productBySlugQuery,
+  playableMediaProductsQuery,
 } from "./products";

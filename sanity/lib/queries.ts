@@ -7,9 +7,11 @@ export {
   allAlbumsQuery,
   albumBySlugQuery,
   featuredAlbumsQuery,
+  playableMediaAlbumsQuery,
   allProductSlugsQuery,
   allProductsQuery,
   productsByKindQuery,
   featuredProductsQuery,
   productBySlugQuery,
+  playableMediaProductsQuery,
 } from "./queries/index";

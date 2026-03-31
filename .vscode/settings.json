@@ -1,0 +1,7 @@
+{
+  "github.copilot.chat.agent.thirdPartyAgents": true,
+  "chat.promptFiles": true,
+  "chat.promptFilesLocations": {
+    ".github/prompts": true
+  }
+}

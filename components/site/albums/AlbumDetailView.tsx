@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { StructuredData } from "@/components/site/StructuredData";
+import { AlbumTrackPlayer } from "@/components/site/albums/AlbumTrackPlayer";
 import type {
   SanityAlbumDetail,
   SanityStreamingLinks,
@@ -166,30 +167,7 @@ export function AlbumDetailView({ album }: AlbumDetailViewProps) {
       </section>
 
       {tracklist.length > 0 && (
-        <section className="mt-12 rounded-2xl border border-white/10 bg-zinc-950/70 p-6 md:p-8" aria-labelledby="album-tracklist-heading">
-          <h2 id="album-tracklist-heading" className="mb-5 text-xs uppercase tracking-[0.3em] text-zinc-500">Tracklist</h2>
-          <ol className="divide-y divide-white/5">
-            {tracklist.map((track, index) => (
-              <li
-                key={`${track.trackNumber ?? index + 1}-${track.title}`}
-                className="flex items-center justify-between gap-4 rounded-lg px-3 py-3.5 transition-colors hover:bg-white/5"
-              >
-                <div className="flex min-w-0 items-center gap-4">
-                  <span className="w-6 shrink-0 text-right text-xs tabular-nums text-zinc-600">
-                    {track.trackNumber ?? index + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-zinc-100">{track.title}</p>
-                    {track.featuring && track.featuring.length > 0 && (
-                      <p className="text-xs text-zinc-500">ft. {track.featuring.join(", ")}</p>
-                    )}
-                  </div>
-                </div>
-                {track.duration && <span className="shrink-0 text-xs tabular-nums text-zinc-500">{track.duration}</span>}
-              </li>
-            ))}
-          </ol>
-        </section>
+        <AlbumTrackPlayer tracks={tracklist} />
       )}
 
       {credits.length > 0 && (
