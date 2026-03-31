@@ -21,10 +21,12 @@ export interface SanityAlbumListItem extends SanityAlbumBase {
 }
 
 export interface SanityTrack {
+  _key?: string;
   trackNumber?: number;
   title: string;
   duration?: string;
   featuring?: string[];
+  audioUrl?: string;
 }
 
 export type SanityStreamingLinks = Partial<Record<SanityStreamingPlatform, string>>;

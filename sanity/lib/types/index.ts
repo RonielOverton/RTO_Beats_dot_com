@@ -24,4 +24,7 @@ export type {
   SanityProductStatus,
   SanityProductListItem,
   SanityProductDetail,
+  SanityPlayableMediaFile,
+  SanityPlayableStreamingLinks,
+  SanityPlayableMediaItem,
 } from "./products";

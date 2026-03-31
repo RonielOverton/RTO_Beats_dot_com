@@ -73,3 +73,36 @@ export const productBySlugQuery = groq`
     }
   }
 `;
+
+// Media player query for digital products with uploaded playable assets.
+export const playableMediaProductsQuery = groq`
+  *[
+    _type == "product" &&
+    status == "published" &&
+    defined(downloadFile.asset) &&
+    (
+      downloadFile.asset->mimeType match "audio/*" ||
+      downloadFile.asset->mimeType match "video/*"
+    )
+  ]
+  | order(featured desc, releaseDate desc) {
+    _id,
+    title,
+    "slug": slug.current,
+    "itemType": "product",
+    productType,
+    shortDescription,
+    releaseDate,
+    featured,
+    downloadVersion,
+    "coverImage": {
+      "url": coverImage.asset->url,
+      "alt": coalesce(coverImage.alt, title)
+    },
+    "mediaFile": {
+      "url": downloadFile.asset->url,
+      "mimeType": downloadFile.asset->mimeType,
+      "originalFilename": downloadFile.asset->originalFilename
+    }
+  }
+`;

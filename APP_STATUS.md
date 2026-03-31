@@ -1,6 +1,6 @@
 # RTO Beats App Status
 
-Last updated: 2026-03-29
+Last updated: 2026-03-30
 
 ## Project Snapshot
 - Framework: Next.js 15 (App Router) + TypeScript + Tailwind CSS
@@ -121,6 +121,61 @@ Copy `.env.example` → `.env.local` and fill in `NEXT_PUBLIC_SANITY_PROJECT_ID`
 ---
 
 ## Change Log
+
+### 2026-03-30
+- Added an explicit Play/Pause button and replaced the simulated EQ animation with a real Web Audio analyser graph in [components/site/albums/AlbumTrackPlayer.tsx](components/site/albums/AlbumTrackPlayer.tsx)
+- Why: gives users direct transport controls and ensures EQ bars react to the actual frequencies of the current audio track
+
+### 2026-03-30
+- Added an animated EQ-style playback graph to [components/site/albums/AlbumTrackPlayer.tsx](components/site/albums/AlbumTrackPlayer.tsx) for the active track controls
+- Why: improves player feedback by visualizing playback activity directly on album pages
+
+### 2026-03-30
+- Added in-player volume control to [components/site/albums/AlbumTrackPlayer.tsx](components/site/albums/AlbumTrackPlayer.tsx) for album track playback on the album detail page
+- Why: gives customers direct loudness control while listening to uploaded track audio files
+
+### 2026-03-30
+- Removed the dedicated media route by deleting [app/media/page.tsx](app/media/page.tsx) and removed the Media link from [components/site/Header.tsx](components/site/Header.tsx)
+- Why: aligns site navigation with the new direction to play audio directly on album pages instead of a standalone media page
+
+### 2026-03-30
+- Updated [components/site/HeroSection.tsx](c:/Users/Roniel/Documents/Coding_RTO/React/rto_beats_dot_com/components/site/HeroSection.tsx) to use the actual uploaded hero asset at [public/images/home](c:/Users/Roniel/Documents/Coding_RTO/React/rto_beats_dot_com/public/images/home) (`96664861-IMG_2455.JPG`)
+- Why: connects the homepage hero directly to the real image added to the repo so the new photography appears without renaming files
+
+### 2026-03-30
+- Updated the homepage hero in [components/site/HeroSection.tsx](c:/Users/Roniel/Documents/Coding_RTO/React/rto_beats_dot_com/components/site/HeroSection.tsx) to support a dedicated local background image with layered cinematic overlays and created [public/images/home](c:/Users/Roniel/Documents/Coding_RTO/React/rto_beats_dot_com/public/images/home) for the hero asset
+- Why: prepares the "Cinematic hip hop production for artists with vision" section to use a custom photography-driven hero image instead of a gradient-only background
+
+### 2026-03-30
+- Fixed media route integration bug where `sanity/lib/queries.ts` compatibility barrel shadowed new query exports, preventing `playableMediaProductsQuery` from resolving
+- Fixed `/media` runtime crash by normalizing null query results to arrays in `app/media/page.tsx` and `components/site/MediaPlayerSection.tsx`
+- Why: ensures recent media-player changes compile and render reliably in the running dev site
+
+### 2026-03-30
+- Added mini-player dock and expand controls with persisted preference in `components/media/MediaPlayerProvider.tsx` and `components/media/PersistentMiniPlayer.tsx`
+- Added active-track auto-scroll sync in `components/site/MediaPlayerSection.tsx` so Next/Prev from the mini-player keeps the media library focused on the current item
+- Why: improves media browsing flow and keeps the current selection visible during playback navigation
+
+### 2026-03-30
+- Added persistent global media playback state with `components/media/MediaPlayerProvider.tsx` and fixed mini-player UI in `components/media/PersistentMiniPlayer.tsx`
+- Updated `app/providers.tsx` to mount the mini player app-wide so playback can continue across route navigation
+- Enhanced `components/site/MediaPlayerSection.tsx` with custom play/pause, progress scrubbing, animated waveform bars, and shared player state integration
+- Added custom media slider/thumb and waveform animation utilities in `app/globals.css`
+- Why: enables cross-page playback persistence and a more polished media player experience
+
+### 2026-03-30
+- Added Sanity-powered media playback route at `app/media/page.tsx` with a library/player UI in `components/site/MediaPlayerSection.tsx`
+- Added `playableMediaProductsQuery` in `sanity/lib/queries/products.ts` to fetch published products with playable audio/video file assets
+- Added media-specific TypeScript models and exports in `sanity/lib/types/products.ts`, `sanity/lib/types/index.ts`, `sanity/lib/queries/index.ts`, and `sanity/lib/index.ts`
+- Updated `components/site/Header.tsx` navigation to include a Media link
+- Why: provides a direct on-site player for audio/video media uploaded in Sanity product documents
+
+### 2026-03-30
+- Rebuilt `sanity/schemaTypes/documents/product.ts` into a unified commerce-ready product model covering album, beat, plugin, merch, and digital products
+- Added conditional Studio logic for album-only, beat-only, and plugin-only fields, plus conditional stock and digital download fields
+- Added new `sanity/schemaTypes/documents/order.ts` document schema for Stripe order tracking and fulfillment state management
+- Updated `sanity/schemaTypes/documents/index.ts` and `sanity/schemaTypes/index.ts` to register the new `order` document schema
+- Why: enables direct-sales workflows with a single scalable product schema and a dedicated order record model
 
 ### 2026-03-29 — Store now surfaces Sanity albums for purchase flow
 - Updated `app/store/page.tsx` to merge Sanity albums into the store catalog so imported albums are listed in `/store`

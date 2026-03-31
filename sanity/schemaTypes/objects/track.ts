@@ -37,6 +37,15 @@ export const trackType = defineType({
       description: "Optional guest artists on this track",
       of: [{ type: "string" }],
     }),
+    defineField({
+      name: "audioFile",
+      title: "Audio file",
+      type: "file",
+      description: "Upload an MP3, WAV, or AAC file for in-browser playback on the album page",
+      options: {
+        accept: "audio/*",
+      },
+    }),
   ],
   preview: {
     select: {
