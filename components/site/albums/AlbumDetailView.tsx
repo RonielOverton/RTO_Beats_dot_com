@@ -12,6 +12,7 @@ import {
   ALBUM_FALLBACK_IMAGE,
   ALBUM_PLATFORM_LABELS,
   ALBUM_STATUS_META,
+  extractBandcampEmbedSrc,
   formatAlbumDate,
   getAlbumImageAlt,
   getAlbumSummary,
@@ -33,6 +34,7 @@ export function AlbumDetailView({ album }: AlbumDetailViewProps) {
   const credits = album.credits ?? [];
   const galleryImages = album.galleryImages ?? [];
   const storeBuyUrl = `/store/${album.slug}`;
+  const bandcampEmbedSrc = extractBandcampEmbedSrc(album.bandcampEmbedCode);
 
   const streamingEntries = album.streamingLinks
     ? (Object.entries(album.streamingLinks) as [keyof SanityStreamingLinks, string | undefined][]).filter(
@@ -208,10 +210,18 @@ export function AlbumDetailView({ album }: AlbumDetailViewProps) {
         </section>
       )}
 
-      {album.bandcampEmbedCode && (
+      {bandcampEmbedSrc && (
         <section className="mt-8 rounded-2xl border border-white/10 bg-zinc-950/70 p-6 md:p-8" aria-labelledby="album-listen-heading">
           <h2 id="album-listen-heading" className="mb-5 text-xs uppercase tracking-[0.3em] text-zinc-500">Listen</h2>
-          <div className="overflow-hidden rounded-xl [&_iframe]:w-full" dangerouslySetInnerHTML={{ __html: album.bandcampEmbedCode }} />
+          <div className="overflow-hidden rounded-xl">
+            <iframe
+              src={bandcampEmbedSrc}
+              title={`${album.title} Bandcamp player`}
+              loading="lazy"
+              className="h-[120px] w-full border-0"
+              sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"
+            />
+          </div>
         </section>
       )}
     </main>

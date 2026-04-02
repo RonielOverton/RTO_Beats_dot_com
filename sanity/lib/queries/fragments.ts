@@ -9,7 +9,7 @@ export const albumCoverImageFields = `
 
 export const productImageFields = `
   "image": {
-    "url": image.asset->url,
-    "alt": coalesce(image.alt, title)
+    "url": coverImage.asset->url,
+    "alt": coalesce(coverImage.alt, title)
   }
 `;

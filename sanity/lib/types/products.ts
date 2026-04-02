@@ -1,7 +1,7 @@
 import type { SanityImage, SanityMoney, SanityPortableTextBlock } from "./shared";
 
-export type SanityProductKind = "merch" | "beat" | "plugin" | "digital-product";
-export type SanityProductStatus = "draft" | "coming-soon" | "active" | "archived";
+export type SanityProductKind = "album" | "merch" | "beat" | "plugin" | "digital";
+export type SanityProductStatus = "draft" | "upcoming" | "published";
 
 export interface SanityProductListItem {
   _id: string;
@@ -26,7 +26,12 @@ export interface SanityProductDetail extends SanityProductListItem {
   };
   relatedAlbumSlug?: string;
   downloadable?: boolean;
+  downloadUrl?: string;
+  downloadVersion?: string;
   previewImages?: SanityImage[];
+  bpm?: number;
+  key?: string;
+  licenseType?: string;
 }
 
 export interface SanityPlayableMediaFile {

@@ -94,6 +94,110 @@ export const orderType = defineType({
       description: "Timestamp of order creation in UTC",
       validation: (rule) => rule.required(),
     }),
+    defineField({
+      name: "fulfillmentStatus",
+      title: "Fulfillment status",
+      type: "string",
+      options: {
+        list: [
+          { title: "Pending", value: "pending" },
+          { title: "Ready", value: "ready" },
+          { title: "Fulfilled", value: "fulfilled" },
+          { title: "Revoked", value: "revoked" },
+          { title: "Expired", value: "expired" },
+        ],
+        layout: "radio",
+      },
+      initialValue: "pending",
+    }),
+    defineField({
+      name: "downloadAccessExpiresAt",
+      title: "Download access expires at",
+      type: "datetime",
+      description: "If set, digital download access should stop after this UTC timestamp.",
+    }),
+    defineField({
+      name: "fulfilledAt",
+      title: "Fulfilled at",
+      type: "datetime",
+      description: "Timestamp when the system made digital delivery available.",
+    }),
+    defineField({
+      name: "items",
+      title: "Items",
+      type: "array",
+      of: [
+        {
+          type: "object",
+          fields: [
+            defineField({
+              name: "title",
+              title: "Title",
+              type: "string",
+              validation: (rule) => rule.required(),
+            }),
+            defineField({
+              name: "slug",
+              title: "Slug",
+              type: "string",
+            }),
+            defineField({
+              name: "kind",
+              title: "Kind",
+              type: "string",
+            }),
+            defineField({
+              name: "quantity",
+              title: "Quantity",
+              type: "number",
+              validation: (rule) => rule.required().min(1),
+            }),
+            defineField({
+              name: "unitAmount",
+              title: "Unit amount",
+              type: "number",
+              validation: (rule) => rule.required().min(0).precision(2),
+            }),
+            defineField({
+              name: "amountTotal",
+              title: "Line total",
+              type: "number",
+              validation: (rule) => rule.required().min(0).precision(2),
+            }),
+            defineField({
+              name: "currency",
+              title: "Currency",
+              type: "string",
+            }),
+            defineField({
+              name: "stripePriceId",
+              title: "Stripe price ID",
+              type: "string",
+            }),
+            defineField({
+              name: "downloadable",
+              title: "Downloadable",
+              type: "boolean",
+              initialValue: false,
+            }),
+          ],
+          preview: {
+            select: {
+              title: "title",
+              quantity: "quantity",
+              amountTotal: "amountTotal",
+            },
+            prepare({ title, quantity, amountTotal }) {
+              const lineTotal = typeof amountTotal === "number" ? amountTotal.toFixed(2) : "0.00";
+              return {
+                title: title ?? "Order item",
+                subtitle: `Qty ${quantity ?? 1} · $${lineTotal}`,
+              };
+            },
+          },
+        },
+      ],
+    }),
   ],
   preview: {
     select: {

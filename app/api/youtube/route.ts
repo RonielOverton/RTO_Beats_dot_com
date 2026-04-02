@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 type YouTubeVideo = {
   id: string;
@@ -147,7 +148,17 @@ async function fetchFromRss(): Promise<YouTubeVideo[]> {
   });
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const rateLimit = enforceRateLimit(req, {
+    key: "youtube-feed",
+    limit: 30,
+    windowMs: 60_000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } });
+  }
+
   try {
     const apiKey = process.env.YOUTUBE_API_KEY;
 
@@ -165,13 +176,20 @@ export async function GET() {
       videos = fallbackVideos;
     }
 
-    return NextResponse.json({
-      channel: {
-        handle: `@${CHANNEL_HANDLE}`,
-        url: CHANNEL_URL,
+    return NextResponse.json(
+      {
+        channel: {
+          handle: `@${CHANNEL_HANDLE}`,
+          url: CHANNEL_URL,
+        },
+        videos,
       },
-      videos,
-    });
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
+        },
+      }
+    );
   } catch (error) {
     console.error("Failed to fetch YouTube videos:", error);
 
@@ -183,7 +201,12 @@ export async function GET() {
         },
         videos: fallbackVideos,
       },
-      { status: 200 }
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
+        },
+      }
     );
   }
 }

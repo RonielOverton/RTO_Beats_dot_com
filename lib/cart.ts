@@ -9,6 +9,8 @@ export function createCartLine(item: StoreItem, quantity = 1): CartLine {
     unitPrice: item.price,
     quantity,
     image: item.image,
+    stripePriceId: item.checkout.stripePriceId,
+    downloadable: item.downloadable,
   };
 }
 
