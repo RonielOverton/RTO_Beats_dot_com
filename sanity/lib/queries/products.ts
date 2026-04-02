@@ -8,68 +8,95 @@ const productListFields = `
   _id,
   title,
   "slug": slug.current,
-  kind,
+  "kind": productType,
   status,
   shortDescription,
   featured,
+  "stockStatus": select(
+    inventoryType == "limited" && stock > 0 => "limited",
+    inventoryType == "limited" => "out-of-stock",
+    "in-stock"
+  ),
   ${productImageFields},
   "price": {
-    "amount": price,
-    "currency": currency
+    "amount": coalesce(price, 0),
+    "currency": "USD"
   }
 `;
 
 export const allProductSlugsQuery = groq`
-  *[_type == "product"] {
+  *[_type == "product" && status in ["published", "upcoming"]] {
     "slug": slug.current
   }
 `;
 
 export const allProductsQuery = groq`
-  *[_type == "product" && status in ["active", "coming-soon"]] | order(featured desc, _updatedAt desc) {
+  *[_type == "product" && status in ["published", "upcoming"]] | order(featured desc, _updatedAt desc) {
     ${productListFields}
   }
 `;
 
 export const productsByKindQuery = groq`
-  *[_type == "product" && kind == $kind && status in ["active", "coming-soon"]] | order(featured desc, _updatedAt desc) {
+  *[_type == "product" && productType == $kind && status in ["published", "upcoming"]] | order(featured desc, _updatedAt desc) {
     ${productListFields}
   }
 `;
 
 export const featuredProductsQuery = groq`
-  *[_type == "product" && featured == true && status in ["active", "coming-soon"]] | order(_updatedAt desc) [0...$limit] {
+  *[_type == "product" && featured == true && status in ["published", "upcoming"]] | order(_updatedAt desc) [0...$limit] {
     ${productListFields}
   }
 `;
 
 export const productBySlugQuery = groq`
-  *[_type == "product" && slug.current == $slug][0] {
+  *[_type == "product" && slug.current == $slug && status in ["published", "upcoming"]][0] {
     _id,
     title,
     "slug": slug.current,
-    kind,
+    "kind": productType,
     status,
     shortDescription,
     fullDescription,
     featured,
     tags,
-    stockStatus,
     downloadable,
+    downloadVersion,
     relatedAlbumSlug,
-    checkout {
-      stripePriceId,
-      shopifyVariantId,
-      externalCheckoutUrl
+    bpm,
+    key,
+    licenseType,
+    "stockStatus": select(
+      inventoryType == "limited" && stock > 0 => "limited",
+      inventoryType == "limited" => "out-of-stock",
+      "in-stock"
+    ),
+    "checkout": {
+      "stripePriceId": stripePriceId,
+      "externalCheckoutUrl": null
     },
     ${productImageFields},
-    previewImages[] {
+    "previewImages": galleryImages[] {
       "url": asset->url,
-      "alt": coalesce(alt, "Product preview image")
+      "alt": coalesce(alt, "Gallery image")
     },
     "price": {
-      "amount": price,
-      "currency": currency
+      "amount": coalesce(price, 0),
+      "currency": "USD"
+    }
+  }
+`;
+
+export const downloadableProductBySlugQuery = groq`
+  *[_type == "product" && slug.current == $slug && status in ["published", "upcoming"]][0] {
+    title,
+    "slug": slug.current,
+    "kind": productType,
+    "downloadVersion": downloadVersion,
+    "downloadable": deliveryType == "digital",
+    "downloadAsset": {
+      "url": downloadFile.asset->url,
+      "mimeType": downloadFile.asset->mimeType,
+      "originalFilename": downloadFile.asset->originalFilename
     }
   }
 `;

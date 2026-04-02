@@ -1,6 +1,6 @@
 # RTO Beats App Status
 
-Last updated: 2026-03-30
+Last updated: 2026-04-02
 
 ## Project Snapshot
 - Framework: Next.js 15 (App Router) + TypeScript + Tailwind CSS
@@ -13,16 +13,27 @@ Last updated: 2026-03-30
 ## Architecture
 
 ```
+.github/
+  agents/
+    security.agent.md      — Specialist agent for security, webhooks, secrets, and fulfillment hardening
+  prompts/
+    audio-player.prompt.md  — Specialist agent for playback and media-player work
+    storefront.prompt.md    — Specialist agent for store and checkout work
+
 app/
   page.tsx                  — Homepage (Hero, Bio, FeaturedWork, CTA, YouTube)
   albums/
     page.tsx                — Albums index — Sanity-driven, SanityAlbumCard grid
     [slug]/page.tsx         — Album detail — Sanity-driven, full layout
   store/
-    page.tsx                — Store index — local catalog data
-    [slug]/page.tsx         — Store item detail — local catalog data
-  cart/page.tsx             — Cart page
+    page.tsx                — Store index — local + Sanity catalog merge
+    [slug]/page.tsx         — Store item detail — local + Sanity lookup chain
+    success/page.tsx        — Stripe order confirmation page
+  cart/page.tsx             — Cart page with Stripe checkout handoff
   api/
+    checkout/route.ts       — Stripe Checkout session creator (buy-now + cart)
+    download/route.ts       — Signed-ticket digital delivery with server-streamed files
+    webhooks/stripe/route.ts — Stripe webhook verification + order persistence
     youtube/route.ts        — YouTube feed (API key or RSS fallback)
 
 components/site/
@@ -88,10 +99,24 @@ lib/
 - JSON-LD `MusicAlbum` schema via `StructuredData`
 
 ### Store (`/store` + `/store/[slug]`)
-- Still reads from local `data/store.ts` — Sanity not yet wired
+- Sanity products and albums merged into the store catalog
+- Product detail page resolves local products, Sanity products, and Sanity albums by slug
+- Direct Stripe checkout for single-item Buy Now flow
+- Direct Stripe checkout for multi-item cart flow
+- Success page renders paid order summary and line items from Stripe
+- Digital fulfillment uses short-lived signed download tickets and server-streamed files
+- Supports digital albums, beats, plugins, and digital download products after payment
 
 ### Cart
 - CartProvider with React context + localStorage persistence
+- Cart checkout posts only `slug` and `quantity` to `/api/checkout`
+- Cart lines preserve Stripe price IDs so Checkout uses Sanity-backed Stripe prices when available
+
+### Stripe Fulfillment
+- `POST /api/webhooks/stripe` verifies Stripe signatures with `STRIPE_WEBHOOK_SECRET`
+- On `checkout.session.completed`, the app fetches Stripe line items and persists an `order` document to Sanity when a write token is available
+- Order schema now supports an `items` array for multi-item carts plus fulfillment metadata for digital delivery access windows
+- Download access is authorized from saved order data and streamed through the app, so permanent asset URLs are not exposed to customers
 
 ---
 
@@ -105,6 +130,10 @@ lib/
 | `SANITY_API_READ_TOKEN` | Optional | For draft/private content |
 | `SANITY_API_WRITE_TOKEN` | Optional | Required for local import scripts that create/update Sanity docs |
 | `YOUTUBE_API_KEY` | Optional | Improves YouTube feed reliability |
+| `STRIPE_SECRET_KEY` | Yes (for checkout) | Stripe secret key — server-side only, never expose to client |
+| `STRIPE_WEBHOOK_SECRET` | Yes (for webhooks) | Stripe webhook signing secret for `POST /api/webhooks/stripe` |
+| `DIGITAL_FULFILLMENT_SECRET` | Recommended | Separate secret for signing short-lived download tickets; falls back to Stripe secrets if absent |
+| `NEXT_PUBLIC_BASE_URL` | Yes (for checkout) | Full origin URL, e.g. `https://rtobeats.com` (for Stripe redirect URLs) |
 
 Copy `.env.example` → `.env.local` and fill in `NEXT_PUBLIC_SANITY_PROJECT_ID` to enable live Sanity data.
 
@@ -113,17 +142,90 @@ Copy `.env.example` → `.env.local` and fill in `NEXT_PUBLIC_SANITY_PROJECT_ID`
 ## Pending Work
 
 - [x] **FeaturedAlbumsSection** — Sanity-powered, replaces local `FeaturedWorkSection` on homepage
-- [ ] **Store pages** — wire `/store` and `/store/[slug]` to Sanity product queries (schema foundation now added)
+- [x] **Store pages** — Sanity products + albums wired to `/store` and `/store/[slug]`; Stripe checkout live
+- [x] **Stripe webhook** — `POST /api/webhooks/stripe` verifies signatures and persists paid orders to Sanity
+- [x] **Digital fulfillment** — paid digital products use signed ticket downloads and saved order authorization
+- [x] **Production security audit** — dependencies reviewed, unused packages removed, headers/CSP configured; see `SECURITY_PRE_LAUNCH.md`
+- [ ] **Rate-limit hardening** — Current in-memory implementation safe for Vercel; must add Redis if multi-instance deployment
 - [ ] **Sanity Studio** — set up Studio UI at `/studio` route or standalone
 - [ ] **ESLint** — install as dev dependency (recurring build warning)
-- [ ] **`.env.local`** — populate with actual Sanity project ID from sanity.io dashboard
+- [ ] **`.env.local`** — populate `NEXT_PUBLIC_SANITY_PROJECT_ID`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `DIGITAL_FULFILLMENT_SECRET`, `NEXT_PUBLIC_BASE_URL`
 
 ---
 
 ## Change Log
 
-### 2026-03-30
-- Added an explicit Play/Pause button and replaced the simulated EQ animation with a real Web Audio analyser graph in [components/site/albums/AlbumTrackPlayer.tsx](components/site/albums/AlbumTrackPlayer.tsx)
+### 2026-04-02 — Production security audit and pre-launch checklist
+- Reviewed all production dependencies: removed 3 unused packages (motion, styled-components, class-variance-authority), pinned security-critical versions to exact releases (Stripe, Sanity, Next.js, React) to prevent auto-minor updates in production
+- Confirmed Stripe webhook security: signature verification enabled, payload size limits enforced, rate limiting in place (120 req/min per IP), error handling produces safe public messages
+- Confirmed HTTP security headers: CSP with strict source allowlist, HSTS (2-year) in production, X-Frame-Options DENY, Permissions-Policy restricting camera/mic/geo, COOP/CORP for cross-origin isolation
+- Confirmed server-side validation: store slug patterns validated, quantity bounds checked (1–10), origin validation enforces same-site requests, Sanity asset URLs whitelisted to cdn.sanity.io only
+- Created comprehensive pre-launch security checklist in `SECURITY_PRE_LAUNCH.md` including: vulnerability inventory, env var requirements, secrets scanning commands, Stripe webhook configuration steps, deployment risks (especially multi-instance rate-limiting), and launch readiness criteria
+- Why: ensures production launch meets security baseline and gives ops team actionable checklist for pre-deploy verification
+
+### 2026-04-01 — Sanity production hardening audit
+- Restricted public Sanity product and album queries to non-draft publishable states so draft entries are not exposed in slug generation, listings, detail pages, or featured rails — `sanity/lib/queries/products.ts`, `sanity/lib/queries/albums.ts`
+- Removed direct `downloadUrl` exposure from the public product detail query and kept downloadable asset access in the dedicated server-side fulfillment query path — `sanity/lib/queries/products.ts`
+- Hardened JSON-LD rendering by escaping script-sensitive characters before injecting structured data from CMS-backed content — `components/site/StructuredData.tsx`
+- Why: enforces clearer public/private data boundaries for Sanity content and reduces XSS/script-breakout risk from CMS-derived values
+
+### 2026-04-01 — Stripe production hardening follow-up audit
+- Minimized client checkout request bodies so buy-now sends only product slug and cart checkout sends only slug + quantity, reducing client-controlled payment input surface — `components/store/BuyNowButton.tsx`, `components/cart/CartTable.tsx`
+- Added strict Stripe-hosted redirect URL validation before returning checkout URLs to clients, enforcing `https://checkout.stripe.com` — `app/api/checkout/route.ts`
+- Tightened payment error handling to use safe public messages in production when Stripe config/session creation fails — `app/api/checkout/route.ts`
+- Simplified webhook gatekeeping to signature-first verification and added payload size limits to reduce abuse risk while preserving Stripe compatibility — `app/api/webhooks/stripe/route.ts`
+- Why: improves production resilience by reducing trusted client input, constraining redirect behavior, and making webhook/session failure handling safer
+
+### 2026-04-01 — Next.js production security hardening pass
+- Added production-oriented security headers and CSP at framework level, including clickjacking, MIME sniffing, referrer, permissions, COOP/CORP, and HSTS controls — `next.config.ts`
+- Hardened checkout route by enforcing same-origin requests, JSON content-type checks, rate limiting, server-side product lookup, and Stripe Price validation from trusted data instead of client-submitted pricing — `app/api/checkout/route.ts`, `lib/server-store.ts`, `lib/server-security.ts`, `lib/rate-limit.ts`
+- Hardened webhook and download routes with stricter request validation, rate limiting, safer production error handling, and stricter download URL allowlisting — `app/api/webhooks/stripe/route.ts`, `app/api/download/route.ts`, `lib/server-security.ts`, `lib/rate-limit.ts`
+- Replaced dangerous raw embed HTML rendering with sanitized Bandcamp iframe source extraction to reduce XSS exposure — `components/site/albums/AlbumDetailView.tsx`, `components/site/albums/album-utils.ts`
+- Tightened Sanity token handling by requiring a write token for order persistence operations — `sanity/lib/orders.ts`
+- Upgraded Next.js to a patched production release and reduced dependency advisories via `npm audit fix --omit=dev` — `package.json`, `package-lock.json`
+- Added a production pre-deploy security checklist and explicit security tradeoffs for Stripe/Sanity/images/embeds/scripts — `README.md`
+- Why: prepares the app and store for production deployment with stronger defaults against XSS, CSRF-like cross-origin abuse, SSRF-style fetch misuse, and payment/download abuse paths
+
+### 2026-04-01 — Added security specialist agent prompt
+- Created a new workspace custom agent for application security, Stripe/webhook hardening, secret handling, API defense, and secure fulfillment work — `.github/agents/security.agent.md`
+- Updated architecture notes to include the repo's custom agent alongside the existing prompt files — `APP_STATUS.md`
+- Why: gives the workspace a dedicated security-focused specialist alongside the storefront and audio-player store workflows
+
+### 2026-04-01 — Local Stripe fulfillment config prepared
+- Added missing local environment placeholders for `STRIPE_WEBHOOK_SECRET` and `NEXT_PUBLIC_BASE_URL`, and generated a local `DIGITAL_FULFILLMENT_SECRET` for signed download tickets — `.env.local`
+- Documented the local Stripe CLI webhook forwarding flow and expected fulfillment behavior — `README.md`
+- Why: makes the new checkout and digital-fulfillment pipeline runnable in local development instead of remaining only code-complete
+
+### 2026-04-01 — Secure digital fulfillment flow added for paid downloads
+- Replaced direct download redirects with a signed-ticket fulfillment model and server-streamed file responses so customers never receive permanent public asset URLs — `lib/fulfillment.ts`, `app/api/download/route.ts`
+- Extended saved Stripe order records with fulfillment status and download access expiry metadata, keeping the system ready for digital albums, beats, plugins, and other downloadable products — `sanity/lib/orders.ts`, `sanity/schemaTypes/documents/order.ts`
+- Added a dedicated server-only product download query and updated the success page to issue short-lived secure download links for paid items, including cart orders with multiple digital products — `sanity/lib/queries/products.ts`, `app/store/success/page.tsx`
+- Why: makes post-purchase delivery safer and more production-ready by moving authorization and file delivery fully behind server-side checks
+
+### 2026-04-01 — Stripe cart checkout now uses Sanity price IDs and webhook fulfillment is prepared
+- Extended cart lines to preserve `stripePriceId` and `downloadable` flags so cart checkout can use Stripe Prices stored in Sanity instead of only inline price data — `types/content.ts`, `lib/cart.ts`, `components/cart/CartProvider.tsx`
+- Updated `POST /api/checkout` to create cart sessions with Stripe Price IDs when available, carry order metadata for fulfillment, and keep the existing buy-now flow aligned with the same metadata model — `app/api/checkout/route.ts`, `components/store/BuyNowButton.tsx`
+- Enhanced the order success page to show Stripe line items for cart orders, preserving the existing store UI language while improving post-checkout clarity — `app/store/success/page.tsx`
+- Added verified Stripe webhook handling and Sanity order persistence helpers, and expanded the `order` schema to support multi-item carts — `app/api/webhooks/stripe/route.ts`, `sanity/lib/orders.ts`, `sanity/schemaTypes/documents/order.ts`
+- Why: completes the direct checkout loop for both single-product and cart purchases and prepares reliable fulfillment hooks for paid orders
+
+### 2026-04-01 — Full storefront integration with Stripe checkout
+- Installed `stripe` SDK — `package.json`
+- Fixed 6 GROQ bugs: `productImageFields` used wrong `image` field (→ `coverImage`); `productListFields` queried non-existent `kind` field (→ `"kind": productType`); status filters referenced schema-mismatched values (→ `published`/`upcoming`); `productBySlugQuery` fetched a non-existent nested `checkout {}` object (→ top-level `stripePriceId`); `stockStatus` fetched as field (→ derived via `select()` from `inventoryType`+`stock`); `previewImages[]` used wrong field name (→ `galleryImages`) — `sanity/lib/queries/fragments.ts`, `sanity/lib/queries/products.ts`
+- Fixed `SanityProductKind` and `SanityProductStatus` TypeScript types to match actual Sanity schema values — `sanity/lib/types/products.ts`
+- Added `mapSanityProductToStoreItem()` adapter — `lib/store-mappers.ts`
+- Wired Sanity `product` documents into `/store` page alongside existing album + local product merge — `app/store/page.tsx`
+- Updated `/store/[slug]` to try local → Sanity product → Sanity album lookup chain — `app/store/[slug]/page.tsx`
+- Replaced checkout placeholder with full `POST /api/checkout` Stripe session creator (supports single-product `buy-now` and multi-item `cart` modes) — `app/api/checkout/route.ts`
+- Created `BuyNowButton` client component (Stripe redirect on click) — `components/store/BuyNowButton.tsx`
+- Updated `CartTable` with real Stripe cart checkout button — `components/cart/CartTable.tsx`
+- Added `compact` prop to `AddToCartButton` for use in product grid cards — `components/cart/AddToCartButton.tsx`
+- Upgraded `ProductCard` with hover lift, stock badges, and compact cart button for Stripe products — `components/site/ProductCard.tsx`
+- Created `/store/success` order confirmation page with download CTA for digital products — `app/store/success/page.tsx`
+- Created `GET /api/download` endpoint: verifies Stripe payment → redirects to Sanity CDN file URL — `app/api/download/route.ts`
+- Why: completes the full e-commerce loop — products from Sanity, paid via Stripe, digital files delivered securely, all within the existing site design language
+
+### 2026-03-30 and replaced the simulated EQ animation with a real Web Audio analyser graph in [components/site/albums/AlbumTrackPlayer.tsx](components/site/albums/AlbumTrackPlayer.tsx)
 - Why: gives users direct transport controls and ensures EQ bars react to the actual frequencies of the current audio track
 
 ### 2026-03-30

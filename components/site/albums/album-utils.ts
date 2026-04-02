@@ -56,6 +56,28 @@ export function getPortableTextParagraphs(blocks?: SanityPortableTextBlock[]): s
     .filter(Boolean);
 }
 
+export function extractBandcampEmbedSrc(embedCode?: string): string | null {
+  if (!embedCode) {
+    return null;
+  }
+
+  const match = embedCode.match(/src="(https:\/\/bandcamp\.com\/EmbeddedPlayer[^"]*)"/i);
+  if (!match?.[1]) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(match[1]);
+    if (parsed.protocol !== "https:" || parsed.hostname !== "bandcamp.com" || !parsed.pathname.startsWith("/EmbeddedPlayer")) {
+      return null;
+    }
+
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function getAlbumSummary(album: Pick<SanityAlbumBase, "shortDescription"> & { fullDescription?: SanityPortableTextBlock[] }): string {
   const paragraphs = getPortableTextParagraphs(album.fullDescription);
   return album.shortDescription ?? paragraphs[0] ?? "Explore this project from RTO Beats.";

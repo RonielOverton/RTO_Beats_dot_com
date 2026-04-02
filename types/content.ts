@@ -59,6 +59,8 @@ export interface CartLine {
   unitPrice: number;
   quantity: number;
   image: string;
+  stripePriceId?: string;
+  downloadable?: boolean;
 }
 
 export interface SiteConfig {

@@ -48,25 +48,25 @@ const albumDetailFields = `
 `;
 
 export const allAlbumSlugsQuery = groq`
-  *[_type == "album"] {
+  *[_type == "album" && status in ["released", "upcoming"]] {
     "slug": slug.current
   }
 `;
 
 export const allAlbumsQuery = groq`
-  *[_type == "album"] | ${albumOrdering} {
+  *[_type == "album" && status in ["released", "upcoming"]] | ${albumOrdering} {
     ${albumBaseFields}
   }
 `;
 
 export const albumBySlugQuery = groq`
-  *[_type == "album" && slug.current == $slug][0] {
+  *[_type == "album" && slug.current == $slug && status in ["released", "upcoming"]][0] {
     ${albumDetailFields}
   }
 `;
 
 export const featuredAlbumsQuery = groq`
-  *[_type == "album" && featured == true] | ${albumOrdering} [0...$limit] {
+  *[_type == "album" && featured == true && status in ["released", "upcoming"]] | ${albumOrdering} [0...$limit] {
     ${albumBaseFields}
   }
 `;

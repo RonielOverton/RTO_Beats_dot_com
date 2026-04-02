@@ -1,11 +1,44 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { formatMoney } from "@/lib/catalog";
 
 export function CartTable() {
   const { lines, subtotal, updateQuantity, removeFromCart, clearCart } = useCart();
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  async function handleCheckout() {
+    setCheckoutLoading(true);
+    setCheckoutError(null);
+
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "cart",
+          lines: lines.map((line) => ({
+            slug: line.slug,
+            quantity: line.quantity,
+          })),
+        }),
+      });
+
+      const data = (await res.json()) as { url?: string; error?: string };
+
+      if (!res.ok || !data.url) {
+        throw new Error(data.error ?? "Checkout failed — please try again.");
+      }
+
+      window.location.href = data.url;
+    } catch (err) {
+      setCheckoutError(err instanceof Error ? err.message : "Something went wrong.");
+      setCheckoutLoading(false);
+    }
+  }
 
   if (!lines.length) {
     return (
@@ -32,10 +65,10 @@ export function CartTable() {
               min={1}
               type="number"
               value={line.quantity}
-              onChange={(event) => updateQuantity(line.itemId, Number(event.target.value))}
-              className="w-20 rounded-md border border-white/20 bg-transparent px-2 py-1"
+              onChange={(e) => updateQuantity(line.itemId, Number(e.target.value))}
+              className="w-20 rounded-md border border-white/20 bg-transparent px-2 py-1 text-zinc-100"
             />
-            <button className="text-sm text-red-300" onClick={() => removeFromCart(line.itemId)}>
+            <button className="text-sm text-red-300 hover:text-red-200 transition" onClick={() => removeFromCart(line.itemId)}>
               Remove
             </button>
           </div>
@@ -44,15 +77,27 @@ export function CartTable() {
 
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <p className="text-xl font-semibold text-amber-200">Subtotal: {formatMoney(subtotal)}</p>
-        <div className="flex gap-3">
-          <button className="rounded-full border border-white/20 px-5 py-2 text-sm" onClick={clearCart}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <button
+            className="rounded-full border border-white/20 px-5 py-2 text-sm text-zinc-200 hover:border-white/40 transition"
+            onClick={clearCart}
+          >
             Clear cart
           </button>
-          <Link href="/api/checkout" className="rounded-full bg-amber-300 px-5 py-2 text-sm font-semibold text-black">
-            Checkout setup
-          </Link>
+          <button
+            onClick={handleCheckout}
+            disabled={checkoutLoading}
+            className="rounded-full bg-amber-300 px-6 py-2 text-sm font-semibold uppercase tracking-[0.14em] text-black transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {checkoutLoading ? "Redirecting…" : "Checkout"}
+          </button>
         </div>
       </div>
+
+      {checkoutError && (
+        <p className="text-xs text-red-300">{checkoutError}</p>
+      )}
     </div>
   );
 }
+
